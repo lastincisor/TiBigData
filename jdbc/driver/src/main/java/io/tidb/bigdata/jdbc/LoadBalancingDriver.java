@@ -31,10 +31,7 @@ import java.sql.Driver;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -67,8 +64,13 @@ public class LoadBalancingDriver implements Driver {
   private static final ThreadLocal<MessageDigest> digestThreadLocal =
       ThreadLocal.withInitial(() -> uncheckedCall(() -> MessageDigest.getInstance("md5")));
 
+  private static final Map<String,String> propertiesMap = new HashMap<>();
+
+
   static {
     MYSQL_DRIVER_NAME = determineDriverName();
+
+    propertiesMap.put("initialTimeout","1");
   }
 
   private final Driver driver;
@@ -266,7 +268,24 @@ public class LoadBalancingDriver implements Driver {
   }
 
   private String getMySqlUrl(final String tidbUrl) {
-    return tidbUrl.replaceFirst(wrapperUrlPrefix, MYSQL_URL_PREFIX);
+    return defaultProperties(tidbUrl.replaceFirst(wrapperUrlPrefix, MYSQL_URL_PREFIX));
+  }
+
+  private String defaultProperties(String tidbUrl){
+    if(tidbUrl == null){
+      return null;
+    }
+    StringJoiner prop = new StringJoiner("&");
+    propertiesMap.forEach((k,v)->{
+      if(!tidbUrl.contains(k)){
+        prop.add(k+"="+v);
+      }
+    });
+    if(tidbUrl.contains("?")){
+      return tidbUrl + "&" + prop;
+    }else{
+      return tidbUrl + "?" + prop;
+    }
   }
 
   public void deregister() throws SQLException {
