@@ -54,7 +54,7 @@ public class LoadBalancingDriver implements Driver {
   /** The value is set by {@link System#setProperty(String, String)} */
   private static final String TIDB_MAX_DISCOVER_INTERVAL_KEY = "tidb.jdbc.max-discovery-interval";
 
-  private static final long TIDB_MAX_DISCOVER_INTERVAL = 3600000;
+  private static final long TIDB_MAX_DISCOVER_INTERVAL = 60000;
   private static final String MYSQL_DRIVER_NAME;
   private static final String NEW_MYSQL_DRIVER_NAME = "com.mysql.cj.jdbc.Driver";
   private static final String OLD_MYSQL_DRIVER_NAME = "com.mysql.jdbc.Driver";
@@ -64,13 +64,12 @@ public class LoadBalancingDriver implements Driver {
   private static final ThreadLocal<MessageDigest> digestThreadLocal =
       ThreadLocal.withInitial(() -> uncheckedCall(() -> MessageDigest.getInstance("md5")));
 
-  private static final Map<String,String> propertiesMap = new HashMap<>();
-
+  private static final Map<String, String> propertiesMap = new HashMap<>();
 
   static {
     MYSQL_DRIVER_NAME = determineDriverName();
 
-    propertiesMap.put("initialTimeout","1");
+    propertiesMap.put("initialTimeout", "1");
   }
 
   private final Driver driver;
@@ -271,19 +270,20 @@ public class LoadBalancingDriver implements Driver {
     return defaultProperties(tidbUrl.replaceFirst(wrapperUrlPrefix, MYSQL_URL_PREFIX));
   }
 
-  private String defaultProperties(String tidbUrl){
-    if(tidbUrl == null){
+  private String defaultProperties(String tidbUrl) {
+    if (tidbUrl == null) {
       return null;
     }
     StringJoiner prop = new StringJoiner("&");
-    propertiesMap.forEach((k,v)->{
-      if(!tidbUrl.contains(k)){
-        prop.add(k+"="+v);
-      }
-    });
-    if(tidbUrl.contains("?")){
+    propertiesMap.forEach(
+        (k, v) -> {
+          if (!tidbUrl.contains(k)) {
+            prop.add(k + "=" + v);
+          }
+        });
+    if (tidbUrl.contains("?")) {
       return tidbUrl + "&" + prop;
-    }else{
+    } else {
       return tidbUrl + "?" + prop;
     }
   }

@@ -21,6 +21,7 @@ import static java.lang.String.format;
 
 import io.tidb.bigdata.jdbc.Discoverer;
 import io.tidb.bigdata.jdbc.ExceptionHelper;
+import io.tidb.bigdata.jdbc.utils.RandomUtils;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.ResultSet;
@@ -127,13 +128,31 @@ public class DiscovererImpl implements Discoverer {
     ExceptionHelper<String[]> result = null;
     try {
       String finalTry = bootstrapUrl[0];
-      for (String tidbUrl : backends.get()) {
+      //      for (String tidbUrl : backends.get()) {
+      //        if (failedBackends.containsKey(tidbUrl)) {
+      //          continue;
+      //        }
+      //        result = discover(tidbUrl, info);
+      //        if (result.isOk()) {
+      //          return result.unwrap();
+      //        }
+      //        if (tidbUrl.equals(finalTry)) {
+      //          finalTry = null;
+      //        }
+      //      }
+      int backendsSize = backends.get().length;
+      String[] urls = backends.get();
+      for (int i = 0; i < backendsSize; i++) {
+        String tidbUrl = urls[RandomUtils.randomValue(backendsSize)];
         if (failedBackends.containsKey(tidbUrl)) {
           continue;
         }
         result = discover(tidbUrl, info);
+        System.out.println("discover---:result.isOk():" + result.isOk() + ",url" + tidbUrl);
         if (result.isOk()) {
           return result.unwrap();
+        } else if (result.isErr()) {
+          failed(tidbUrl);
         }
         if (tidbUrl.equals(finalTry)) {
           finalTry = null;
@@ -143,6 +162,8 @@ public class DiscovererImpl implements Discoverer {
         result = discover(finalTry, info);
         if (result.isOk()) {
           return result.unwrap();
+        } else if (result.isErr()) {
+          failed(finalTry);
         }
       }
       assert result != null;
